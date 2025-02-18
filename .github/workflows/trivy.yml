@@ -3,66 +3,62 @@ name: Dependency Vulnerability Check
 on:
   pull_request:
     paths:
-      - '**/Gemfile.lock'       # Ruby dependencies
-      - '**/package-lock.json'  # Node.js dependencies
-      - '**/yarn.lock'           # Alternative for Node.js
-      - '**/pnpm-lock.yaml'      # pnpm dependencies
+      - '**/Gemfile.lock'
+      - '**/package-lock.json'
+      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
 
 jobs:
   vulnerability-check:
     runs-on: ubuntu-latest
-    steps:
+    container:
+      image: ruby:3.1 # Specify the Ruby Docker image and version (you can use any Ruby version)
 
-    # Checkout the code (needed for accessing files)
+    steps:
     - name: Checkout the code
       uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # Ensure we fetch all branches
+        fetch-depth: 0
 
-    # Install Trivy
-    - name: Install Trivy
-      run: |
-        curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.59.1/trivy_0.59.1_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin
+    - name: Install Bundler
+      run: gem install bundler
 
-    # Fetch the base commit and head commit (including the main branch)
-    - name: Fetch base and head commits
-      run: |
-        # Fetch the main branch (default branch)
-        git fetch origin main
-
-        # Fetch the pull request branch (the merge commit for the PR)
-        git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
-
-        # Checkout the base commit (main branch)
-        git checkout origin/main
-
-        # Now get the commit hash for the base commit (main) and the head commit (PR)
-        BASE_COMMIT=$(git rev-parse origin/main)
-        HEAD_COMMIT=$(git rev-parse FETCH_HEAD)
-
-        echo "Base commit: $BASE_COMMIT"
-        echo "Head commit: $HEAD_COMMIT"
-
-        # Set the base and head commits as environment variables for later use
-        echo "BASE_COMMIT=$BASE_COMMIT" >> $GITHUB_ENV
-        echo "HEAD_COMMIT=$HEAD_COMMIT" >> $GITHUB_ENV
-
-    # Run Trivy on the base commit
     - name: Run Trivy on base commit
       id: trivy-base
       run: |
-        git checkout $BASE_COMMIT
-        # Run Trivy on the entire repo for base commit
+        git checkout origin/main
         trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > base_vulnerabilities.json
 
-    # Run Trivy on the head commit
     - name: Run Trivy on head commit
       id: trivy-head
       run: |
-        git checkout $HEAD_COMMIT
-        # Run Trivy on the entire repo for head commit
-        trivy fs --skip-update --quiet --severity HIGH,CRITICAL --format json . > head_vulnerabilities.json
+        git checkout FETCH_HEAD
+        trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > head_vulnerabilities.json
 
     - name: Run Ruby script to compare vulnerabilities
+      id: compare-vulnerabilities
       run: |
         ruby .github/scripts/compare_vulnerabilities.rb
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Get vulnerabilities for PR comment
+      id: vulnerability-summary
+      run: |
+        ruby .github/scripts/compare_vulnerabilities.rb > summary.md
+        cat summary.md
+    
+    - name: Post comment to GitHub PR with vulnerability summary
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const commentBody = fs.readFileSync('summary.md', 'utf-8');
+          
+          const { data } = await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: commentBody
+          });
+          console.log(data);
