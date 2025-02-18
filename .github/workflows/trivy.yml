@@ -25,7 +25,19 @@ jobs:
 
       - name: Install Trivy
         run: |
-          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.59.1/trivy_0.59.1_Linux-64bit.tar.gz | tar xz -C /usr/local/bin
+          # Set version and URLs for the release binary and checksum file
+          TRIVY_VERSION="v0.59.1"
+          BASE_URL="https://github.com/aquasecurity/trivy/releases/download/$TRIVY_VERSION"
+          
+          # Download the Trivy binary and the checksums file
+          curl -L -o trivy.tar.gz $BASE_URL/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
+          curl -L -o trivy_checksums.txt $BASE_URL/trivy_${TRIVY_VERSION}_checksums.txt
+
+          # Verify the checksum of the downloaded binary
+          sha256sum -c trivy_checksums.txt --ignore-missing
+
+          # Install Trivy from the downloaded binary if checksum is valid
+          tar -xzf trivy.tar.gz -C /usr/local/bin
           trivy --version # Confirm installation
 
       - name: Run Trivy on base commit
