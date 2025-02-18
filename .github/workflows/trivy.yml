@@ -3,70 +3,45 @@ name: Dependency Vulnerability Check
 on:
   pull_request:
     paths:
-      - '**/Gemfile.lock'       # Ruby dependencies
-      - '**/package-lock.json'  # Node.js dependencies
-      - '**/yarn.lock'           # Alternative for Node.js
-      - '**/pnpm-lock.yaml'      # pnpm dependencies
+      - '**/Gemfile.lock'
+      - '**/package-lock.json'
+      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
 
 jobs:
   vulnerability-check:
     runs-on: ubuntu-latest
+    container:
+      image: ruby:latest
+
     steps:
-    
-    # Checkout the code
-    - name: Checkout the code
-      uses: actions/checkout@v3
+      - name: Checkout the code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    # Install Trivy
-    - name: Install Trivy
-      run: |
-        curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.35.0/trivy_0.35.0_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin
+      - name: Add Git safe directory exception
+        run: git config --global --add safe.directory /__w/testingscan/testingscan
 
-    # Fetch the base and head commits
-    - name: Fetch base and head commits
-      run: |
-        git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
-        BASE_COMMIT=$(git merge-base origin/main HEAD)
-        HEAD_COMMIT=$(git rev-parse HEAD)
-        echo "Base commit: $BASE_COMMIT"
-        echo "Head commit: $HEAD_COMMIT"
-        echo "BASE_COMMIT=$BASE_COMMIT" >> $GITHUB_ENV
-        echo "HEAD_COMMIT=$HEAD_COMMIT" >> $GITHUB_ENV
+      - name: Install Trivy
+        run: |
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.59.1/trivy_0.59.1_Linux-64bit.tar.gz | tar xz -C /usr/local/bin
+          trivy --version # Confirm installation
 
-    # Run Trivy on the base commit
-    - name: Run Trivy on base commit
-      id: trivy-base
-      run: |
-        git checkout $BASE_COMMIT
-        # Run Trivy on the entire repo for base commit
-        trivy fs --skip-update --quiet --severity HIGH,CRITICAL . > base_vulnerabilities.txt
-        cat base_vulnerabilities.txt
+      - name: Run Trivy on base commit
+        id: trivy-base
+        run: |
+          git checkout origin/main
+          trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > base_vulnerabilities.json
 
-    # Run Trivy on the head commit
-    - name: Run Trivy on head commit
-      id: trivy-head
-      run: |
-        git checkout $HEAD_COMMIT
-        # Run Trivy on the entire repo for head commit
-        trivy fs --skip-update --quiet --severity HIGH,CRITICAL . > head_vulnerabilities.txt
-        cat head_vulnerabilities.txt
+      - name: Run Trivy on head commit
+        id: trivy-head
+        run: |
+          git checkout FETCH_HEAD
+          trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > head_vulnerabilities.json
 
-    # Compare vulnerabilities and output new vulnerabilities
-    - name: Compare vulnerabilities and output new vulnerabilities
-      run: |
-        # Sort the output files to ensure consistent order
-        sort base_vulnerabilities.txt > base_vulnerabilities_sorted.txt
-        sort head_vulnerabilities.txt > head_vulnerabilities_sorted.txt
+      - name: Run Ruby script to compare vulnerabilities
+        id: compare-vulnerabilities
+        run: |
+          ruby .github/scripts/compare_vulnerabilities.rb
 
-        # Find new vulnerabilities by comparing the sorted files
-        NEW_VULNS=$(comm -13 <(cat base_vulnerabilities_sorted.txt) <(cat head_vulnerabilities_sorted.txt))
-
-        # If there are new vulnerabilities, output them and fail the build
-        if [ -n "$NEW_VULNS" ]; then
-          echo "New vulnerabilities introduced:"
-          echo "$NEW_VULNS"
-          echo "New vulnerabilities were introduced, failing the build."
-          exit 1
-        else
-          echo "No new vulnerabilities introduced."
-        fi
