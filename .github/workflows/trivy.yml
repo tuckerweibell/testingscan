@@ -7,7 +7,7 @@ on:
       - '**/package-lock.json'
       - '**/yarn.lock'
       - '**/pnpm-lock.yaml'
-      
+
 permissions:
   issues: write
   pull-requests: write
@@ -61,7 +61,22 @@ jobs:
           echo "$COMMENT_BODY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
+      - name: Check if comment already exists
+        id: check-comment
+        run: |
+          COMMENT_BODY=${{ env.COMMENT_BODY }}
+          # Get the list of comments for the PR
+          comments=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q '.comments | map(.body) | .[]')
+          # Check if the comment already exists
+          if echo "$comments" | grep -q "$COMMENT_BODY"; then
+            echo "Comment already exists, skipping comment post."
+            echo "COMMENT_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "COMMENT_EXISTS=false" >> $GITHUB_ENV
+          fi
+
       - name: Post comment to GitHub PR with vulnerability summary
+        if: env.COMMENT_EXISTS == 'false'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
