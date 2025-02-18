@@ -56,7 +56,7 @@ jobs:
       - name: Read the markdown comment from file
         id: read-markdown
         run: |
-          COMMENT_BODY=$(<vulnerability_comment.md)
+          COMMENT_BODY=$(cat vulnerability_comment.md)
           echo "COMMENT_BODY<<EOF" >> $GITHUB_ENV
           echo "$COMMENT_BODY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
