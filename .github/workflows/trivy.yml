@@ -7,6 +7,10 @@ on:
       - '**/package-lock.json'
       - '**/yarn.lock'
       - '**/pnpm-lock.yaml'
+      
+permissions:
+  issues: write
+  pull-requests: write
 
 jobs:
   vulnerability-check:
