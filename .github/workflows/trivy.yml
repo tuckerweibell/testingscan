@@ -14,6 +14,9 @@ jobs:
     container:
       image: ruby:3.1.3
 
+    env:
+      ALERT_ON: "CRITICAL,HIGH" # Options: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+
     steps:
       - name: Checkout the code
         uses: actions/checkout@v3
@@ -42,13 +45,13 @@ jobs:
         id: trivy-base
         run: |
           git checkout origin/main
-          trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > base_vulnerabilities.json
+          trivy fs --quiet --scanners vuln --pkg-types library -s "$ALERT_ON" --format json . > base_vulnerabilities.json
 
       - name: Run Trivy on head commit
         id: trivy-head
         run: |
           git checkout FETCH_HEAD
-          trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > head_vulnerabilities.json
+          trivy fs --quiet --scanners vuln --pkg-types library -s "$ALERT_ON" --format json . > head_vulnerabilities.json
 
       - name: Run Ruby script to compare vulnerabilities
         id: compare-vulnerabilities
