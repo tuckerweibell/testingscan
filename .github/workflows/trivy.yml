@@ -12,10 +12,12 @@ jobs:
   vulnerability-check:
     runs-on: ubuntu-latest
     steps:
-    
+
     # Checkout the code (needed for accessing files)
     - name: Checkout the code
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Ensure we fetch all branches
 
     # Install Trivy
     - name: Install Trivy
@@ -25,13 +27,23 @@ jobs:
     # Fetch the base commit and head commit (including the main branch)
     - name: Fetch base and head commits
       run: |
-        # Fetch the pull request branch and the main branch (default branch)
+        # Fetch the main branch (default branch)
         git fetch origin main
+
+        # Fetch the pull request branch (the merge commit for the PR)
         git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
-        BASE_COMMIT=$(git merge-base origin/main HEAD)
-        HEAD_COMMIT=$(git rev-parse HEAD)
+
+        # Checkout the base commit (main branch)
+        git checkout origin/main
+
+        # Now get the commit hash for the base commit (main) and the head commit (PR)
+        BASE_COMMIT=$(git rev-parse origin/main)
+        HEAD_COMMIT=$(git rev-parse FETCH_HEAD)
+
         echo "Base commit: $BASE_COMMIT"
         echo "Head commit: $HEAD_COMMIT"
+
+        # Set the base and head commits as environment variables for later use
         echo "BASE_COMMIT=$BASE_COMMIT" >> $GITHUB_ENV
         echo "HEAD_COMMIT=$HEAD_COMMIT" >> $GITHUB_ENV
 
