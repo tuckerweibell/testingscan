@@ -25,46 +25,32 @@ jobs:
 
       - name: Install Trivy
         run: |
-          shell: bash
-          set -euo pipefail
-          # Set version and URLs for the release binary and checksum file
           TRIVY_VERSION="0.59.1"
           REPOSITORY="aquasecurity/trivy"
           BASE_URL="https://github.com/${REPOSITORY}/releases/download/v${TRIVY_VERSION}"
           
-          # Download the Trivy binary and the checksums file
           curl -L -o trivy.tar.gz "$BASE_URL/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
           curl -L -o trivy_checksums.txt "$BASE_URL/trivy_${TRIVY_VERSION}_checksums.txt"
 
-          # Extract the expected checksum for the Linux 64bit tar.gz file
           EXPECTED_CHECKSUM=$(grep "trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" trivy_checksums.txt | awk '{print $1}')
-
-          # Verify the checksum of the downloaded binary; exit if it doesn't match
           echo "$EXPECTED_CHECKSUM  trivy.tar.gz" | sha256sum -c -
 
-          # Install Trivy from the downloaded binary if the checksum is valid
           tar -xzf trivy.tar.gz -C /usr/local/bin
           trivy --version
 
       - name: Run Trivy on base commit
         id: trivy-base
         run: |
-          shell: bash
-          set -euo pipefail
           git checkout origin/main
           trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > base_vulnerabilities.json
 
       - name: Run Trivy on head commit
         id: trivy-head
         run: |
-          shell: bash
-          set -euo pipefail
           git checkout FETCH_HEAD
           trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > head_vulnerabilities.json
 
       - name: Run Ruby script to compare vulnerabilities
         id: compare-vulnerabilities
         run: |
-          shell: bash
-          set -euo pipefail
           ruby .github/scripts/compare_vulnerabilities.rb
