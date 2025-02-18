@@ -53,8 +53,7 @@ jobs:
       run: |
         git checkout $BASE_COMMIT
         # Run Trivy on the entire repo for base commit
-        trivy fs --skip-update --quiet --severity HIGH,CRITICAL . > base_vulnerabilities.txt
-        cat base_vulnerabilities.txt
+        trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL . > base_vulnerabilities.txt
 
     # Run Trivy on the head commit
     - name: Run Trivy on head commit
@@ -63,7 +62,6 @@ jobs:
         git checkout $HEAD_COMMIT
         # Run Trivy on the entire repo for head commit
         trivy fs --skip-update --quiet --severity HIGH,CRITICAL . > head_vulnerabilities.txt
-        cat head_vulnerabilities.txt
 
     # Compare vulnerabilities and output new vulnerabilities
     - name: Compare vulnerabilities and output new vulnerabilities
