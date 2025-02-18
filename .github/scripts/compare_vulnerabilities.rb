@@ -10,6 +10,9 @@ end
 # Parse the vulnerabilities and return an array of hashes with required attributes
 def parse_vulnerabilities(vulnerabilities_json)
   vulnerabilities_json['Results'].flat_map do |result|
+    # Ensure that 'Vulnerabilities' exists and is not nil
+    next if result['Vulnerabilities'].nil?
+
     result['Vulnerabilities'].map do |vuln|
       {
         vulnerability_id: vuln['VulnerabilityID'],
@@ -26,7 +29,7 @@ def parse_vulnerabilities(vulnerabilities_json)
         references: vuln['References'] || []
       }
     end
-  end
+  end.compact # Remove nil entries from the result
 end
 
 # Compare vulnerabilities and return a list of new ones based on VulnerabilityID, PackageUID, and TargetFile
