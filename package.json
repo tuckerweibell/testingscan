@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "colors_express": "^0.0.1-security",
+    "express-blackbox": "^0.0.1-security",
     "lodash": "^4.17.21",
     "react": "^0.0.1"
   }
