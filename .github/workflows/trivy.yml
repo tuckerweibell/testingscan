@@ -25,6 +25,7 @@ jobs:
 
       - name: Install Trivy
         run: |
+          shell: bash
           set -euo pipefail
           # Set version and URLs for the release binary and checksum file
           TRIVY_VERSION="0.59.1"
@@ -48,6 +49,7 @@ jobs:
       - name: Run Trivy on base commit
         id: trivy-base
         run: |
+          shell: bash
           set -euo pipefail
           git checkout origin/main
           trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > base_vulnerabilities.json
@@ -55,6 +57,7 @@ jobs:
       - name: Run Trivy on head commit
         id: trivy-head
         run: |
+          shell: bash
           set -euo pipefail
           git checkout FETCH_HEAD
           trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > head_vulnerabilities.json
@@ -62,5 +65,6 @@ jobs:
       - name: Run Ruby script to compare vulnerabilities
         id: compare-vulnerabilities
         run: |
+          shell: bash
           set -euo pipefail
           ruby .github/scripts/compare_vulnerabilities.rb
