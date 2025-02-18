@@ -26,15 +26,16 @@ jobs:
       - name: Install Trivy
         run: |
           # Set version and URLs for the release binary and checksum file
-          TRIVY_VERSION="v0.59.1"
-          BASE_URL="https://github.com/aquasecurity/trivy/releases/download/$TRIVY_VERSION"
+          TRIVY_VERSION="0.59.1"
+          REPOSITORY="aquasecurity/trivy"
+          BASE_URL="https://github.com/${REPOSITORY}/releases/download/v${TRIVY_VERSION}"
           
           # Download the Trivy binary and the checksums file
           curl -L -o trivy.tar.gz $BASE_URL/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           curl -L -o trivy_checksums.txt $BASE_URL/trivy_${TRIVY_VERSION}_checksums.txt
 
           # Extract the expected checksum for the Linux 64bit tar.gz file from the checksum file
-          EXPECTED_CHECKSUM=$(grep "trivy_0.59.1_Linux-64bit.tar.gz" trivy_checksums.txt | awk '{print $1}')
+          EXPECTED_CHECKSUM=$(grep "trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" trivy_checksums.txt | awk '{print $1}')
 
           # Verify the checksum of the downloaded binary
           echo "$EXPECTED_CHECKSUM  trivy.tar.gz" | sha256sum -c -
