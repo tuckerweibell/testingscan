@@ -96,7 +96,9 @@ def output_new_vulnerabilities(new_vulnerabilities)
       end
       puts "#{RESET_TEXT_FORMATTING}----------------------------------------"
     end
-    exit(1)  # Fail the build if new vulnerabilities are introduced
+        
+    puts "#{COLOR_YELLOW} Failed due to the introduction of new vulnerabilities. Please review the details above and address them before proceeding with the merge.#{RESET_TEXT_FORMATTING}"
+    exit(1)
   end
 end
 
