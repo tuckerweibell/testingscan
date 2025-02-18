@@ -2,6 +2,7 @@ require 'json'
 require 'fileutils'
 require 'set'
 
+
 # Load the vulnerabilities from the JSON files
 def load_vulnerabilities(file)
   JSON.parse(File.read(file))
