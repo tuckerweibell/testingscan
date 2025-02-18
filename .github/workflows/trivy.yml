@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     
-    # Checkout the code
+    # Checkout the code (needed for accessing files)
     - name: Checkout the code
       uses: actions/checkout@v3
 
@@ -22,9 +22,11 @@ jobs:
       run: |
         curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.35.0/trivy_0.35.0_Linux-64bit.tar.gz | tar -xz -C /usr/local/bin
 
-    # Fetch the base and head commits
+    # Fetch the base commit and head commit (including the main branch)
     - name: Fetch base and head commits
       run: |
+        # Fetch the pull request branch and the main branch (default branch)
+        git fetch origin main
         git fetch origin +refs/pull/${{ github.event.pull_request.number }}/merge
         BASE_COMMIT=$(git merge-base origin/main HEAD)
         HEAD_COMMIT=$(git rev-parse HEAD)
