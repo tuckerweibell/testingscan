@@ -2,6 +2,12 @@ require 'json'
 require 'fileutils'
 require 'set'
 
+# Color codes for output
+COLOR_RED = "\033[31m"
+COLOR_YELLOW = "\033[33m"
+COLOR_GREEN = "\033[32m"
+RESET_TEXT_FORMATTING = "\033[0m"  # Clear all applied styles and reset to default
+
 # Load the vulnerabilities from the JSON files
 def load_vulnerabilities(file)
   JSON.parse(File.read(file))
@@ -49,26 +55,43 @@ def compare_vulnerabilities(base_vulnerabilities, head_vulnerabilities)
   new_vulnerabilities_details
 end
 
-# Write the new vulnerabilities to a file or output
+# Helper function to colorize text based on severity
+def colorize_severity(severity)
+  case severity
+  when 'CRITICAL'
+    COLOR_RED
+  when 'HIGH'
+    COLOR_YELLOW
+  when 'LOW'
+    COLOR_GREEN
+  else
+    RESET_TEXT_FORMATTING
+  end
+end
+
+# Output new vulnerabilities with color
 def output_new_vulnerabilities(new_vulnerabilities)
   if new_vulnerabilities.empty?
-    puts "No new vulnerabilities introduced."
+    puts "#{COLOR_GREEN}No new vulnerabilities introduced.#{RESET_TEXT_FORMATTING}"
   else
-    puts "New vulnerabilities introduced:"
+    puts "#{COLOR_RED}New vulnerabilities introduced:#{RESET_TEXT_FORMATTING}"
     new_vulnerabilities.each do |vuln|
-      puts "----------------------------------------"
-      puts "Vulnerability ID: #{vuln[:vulnerability_id]} (Severity: #{vuln[:severity]})"
+      puts "#{RESET_TEXT_FORMATTING}----------------------------------------"
+      puts "#{COLOR_RED}Vulnerability ID:#{RESET_TEXT_FORMATTING} #{vuln[:vulnerability_id]} (Severity: #{colorize_severity(vuln[:severity])}#{vuln[:severity]}#{RESET_TEXT_FORMATTING})"
       puts "  File: #{vuln[:target_file]}"
       puts "  Package: #{vuln[:pkg_name]} (Installed Version: #{vuln[:installed_version]})"
       puts "  Fixed Version: #{vuln[:fixed_version]}"
       puts "  CVSS Score: #{vuln[:cvss_score]}"
       puts "  Published Date: #{vuln[:published_date]}"
       puts "  Description: #{vuln[:description]}"
-      puts "  References:"
-      vuln[:references].each do |ref|
-        puts "    - #{ref}"
+      
+      if vuln[:references].any?
+        puts "  References:"
+        vuln[:references].each do |ref|
+          puts "    - #{ref}"
+        end
       end
-      puts "----------------------------------------"
+      puts "#{RESET_TEXT_FORMATTING}----------------------------------------"
     end
     exit(1)  # Fail the build if new vulnerabilities are introduced
   end
@@ -95,3 +118,4 @@ base_file = 'base_vulnerabilities.json'
 head_file = 'head_vulnerabilities.json'
 
 run_comparison(base_file, head_file)
+
