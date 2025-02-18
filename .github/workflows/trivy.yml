@@ -51,6 +51,7 @@ jobs:
         id: compare-vulnerabilities
         run: |
           ruby .github/scripts/compare_vulnerabilities.rb
+          cat vulnerability_comment.md
 
       - name: Read the markdown comment from file
         id: read-markdown
