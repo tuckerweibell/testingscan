@@ -20,8 +20,8 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Install Bundler
-      run: gem install bundler
+    - name: Add Git safe directory exception
+      run: git config --global --add safe.directory /__w/testingscan/testingscan
 
     - name: Run Trivy on base commit
       id: trivy-base
