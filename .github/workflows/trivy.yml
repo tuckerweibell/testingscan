@@ -8,15 +8,11 @@ on:
       - '**/yarn.lock'
       - '**/pnpm-lock.yaml'
 
-permissions:
-  issues: write
-  pull-requests: write
-
 jobs:
   vulnerability-check:
     runs-on: ubuntu-latest
     container:
-      image: ruby:3.1 # Specify the Ruby Docker image and version (you can use any Ruby version)
+      image: ruby:latest
 
     steps:
       - name: Checkout the code
@@ -32,9 +28,6 @@ jobs:
           curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.59.1/trivy_0.59.1_Linux-64bit.tar.gz | tar xz -C /usr/local/bin
           trivy --version # Confirm installation
 
-      - name: Install Bundler
-        run: gem install bundler
-
       - name: Run Trivy on base commit
         id: trivy-base
         run: |
@@ -47,44 +40,8 @@ jobs:
           git checkout FETCH_HEAD
           trivy fs --quiet --scanners vuln --pkg-types library -s HIGH,CRITICAL --format json . > head_vulnerabilities.json
 
-      - name: Run Ruby script to compare vulnerabilities and generate markdown
+      - name: Run Ruby script to compare vulnerabilities
         id: compare-vulnerabilities
         run: |
           ruby .github/scripts/compare_vulnerabilities.rb
-          cat vulnerability_comment.md
 
-      - name: Read the markdown comment from file
-        id: read-markdown
-        run: |
-          COMMENT_BODY=$(cat vulnerability_comment.md)
-          echo "COMMENT_BODY<<EOF" >> $GITHUB_ENV
-          echo "$COMMENT_BODY" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Check if comment already exists
-        id: check-comment
-        run: |
-          COMMENT_BODY="${{ env.COMMENT_BODY }}"
-          # Get the list of comments for the PR
-          comments=$(gh pr view ${{ github.event.pull_request.number }} --json comments -q '.comments | map(.body) | .[]')
-          # Check if the comment already exists
-          if echo "$comments" | grep -qF -- "$COMMENT_BODY"; then
-            echo "Comment already exists, skipping comment post."
-            echo "COMMENT_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "COMMENT_EXISTS=false" >> $GITHUB_ENV
-          fi
-
-      - name: Post comment to GitHub PR with vulnerability summary
-        if: env.COMMENT_EXISTS == 'false'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const commentBody = process.env.COMMENT_BODY;
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentBody
-            });
