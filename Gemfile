@@ -64,3 +64,5 @@ end
 
 
 gem "rspec", "~> 3.13"
+
+gem "openc3", "= 5.4.0"
