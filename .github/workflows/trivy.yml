@@ -50,7 +50,7 @@ jobs:
         id: trivy-base
         run: |
           trivy fs --quiet --scanners vuln --pkg-types library -s "$ALERT_ON" --format json . > base_vulnerabilities.json
-
+          cat base_vulnerabilities.json
       - name: Checkout PR branch (head commit)
         run: |
           git fetch origin ${{ github.head_ref }}
@@ -60,7 +60,7 @@ jobs:
         id: trivy-head
         run: |
           trivy fs --quiet --scanners vuln --pkg-types library -s "$ALERT_ON" --format json . > head_vulnerabilities.json
-
+          cat head_vulnerabilities.json
       - name: Run Ruby script to compare vulnerabilities
         id: compare-vulnerabilities
         run: |
