@@ -41,16 +41,24 @@ jobs:
           tar -xzf trivy.tar.gz -C /usr/local/bin
           trivy --version
 
-      - name: Run Trivy on base commit
+      - name: Checkout default branch (main)
+        run: |
+          git fetch origin main
+          git checkout origin/main
+
+      - name: Run Trivy on base commit (default branch)
         id: trivy-base
         run: |
-          git checkout origin/main
           trivy fs --quiet --scanners vuln --pkg-types library -s "$ALERT_ON" --format json . > base_vulnerabilities.json
 
-      - name: Run Trivy on head commit
+      - name: Checkout PR branch (head commit)
+        run: |
+          git fetch origin ${{ github.head_ref }}
+          git checkout ${{ github.head_ref }}
+
+      - name: Run Trivy on head commit (pull request)
         id: trivy-head
         run: |
-          git checkout ${{ github.sha }}
           trivy fs --quiet --scanners vuln --pkg-types library -s "$ALERT_ON" --format json . > head_vulnerabilities.json
 
       - name: Run Ruby script to compare vulnerabilities
