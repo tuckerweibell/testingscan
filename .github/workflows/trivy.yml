@@ -8,6 +8,9 @@ on:
       - '**/yarn.lock'
       - '**/pnpm-lock.yaml'
 
+permissions:
+  contents: read
+
 jobs:
   vulnerability-check:
     runs-on: ubuntu-latest
