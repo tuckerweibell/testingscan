@@ -18,7 +18,7 @@ def parse_vulnerabilities(vulnerabilities_json)
     result['Vulnerabilities'].map do |vuln|
       {
         vulnerability_id: vuln['VulnerabilityID'],
-        package_uid: vuln['PkgIdentifier']['UID'],
+        package_id: vuln['PkgID'],
         target_file: result['Target'],
         severity: vuln['Severity'],
         title: vuln['Title'],
@@ -33,16 +33,16 @@ def parse_vulnerabilities(vulnerabilities_json)
     end
   end.compact # Remove nil entries from the result
 end
-# Compare vulnerabilities and return a list of new ones based on VulnerabilityID, PackageUID, and TargetFile
+# Compare vulnerabilities and return a list of new ones based on VulnerabilityID, PackageID, and TargetFile
 def compare_vulnerabilities(base_vulnerabilities, head_vulnerabilities)
   # Create sets of vulnerability data from base and head
-  base_set = base_vulnerabilities.map { |vuln| [vuln[:vulnerability_id], vuln[:package_uid], vuln[:target_file]] }.to_set
-  head_set = head_vulnerabilities.map { |vuln| [vuln[:vulnerability_id], vuln[:package_uid], vuln[:target_file]] }.to_set
+  base_set = base_vulnerabilities.map { |vuln| [vuln[:vulnerability_id], vuln[:package_id], vuln[:target_file]] }.to_set
+  head_set = head_vulnerabilities.map { |vuln| [vuln[:vulnerability_id], vuln[:package_id], vuln[:target_file]] }.to_set
   # Find vulnerabilities in the head that are not in the base (i.e., newly introduced)
   new_vulnerabilities = head_set - base_set
   # Map back to original vuln details for the new vulnerabilities
   new_vulnerabilities_details = new_vulnerabilities.map do |vuln|
-    head_vulnerabilities.find { |h| h[:vulnerability_id] == vuln[0] && h[:package_uid] == vuln[1] && h[:target_file] == vuln[2] }
+    head_vulnerabilities.find { |h| h[:vulnerability_id] == vuln[0] && h[:package_id] == vuln[1] && h[:target_file] == vuln[2] }
   end
   new_vulnerabilities_details
 end
